@@ -16,6 +16,7 @@ def remove_watermark(input_pdf, output_pdf):
 
     if not wm_xref:
         print(f"[{input_pdf}] No common image found → skipped")
+        print("   Hint: If the watermark starts after page 2, try changing the comparison pages (e.g. page 2 and 3).")
         return
 
     wm_names = {img[7] for page in doc for img in page.get_images(full=True) if img[0] == wm_xref}
