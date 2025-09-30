@@ -31,7 +31,7 @@ It is designed for scanned PDFs where the same watermark image is inserted on ev
 
 3. Run the script:
    ```bash
-   python start.py
+   python HatePdfWaterMark.py
    ```
 
 4. Cleaned PDFs will be saved in an `output` folder with the same filename.
