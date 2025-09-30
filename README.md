@@ -2,7 +2,7 @@
 
 This script removes repeated image watermarks from PDF files using [PyMuPDF (fitz)](https://pymupdf.readthedocs.io/).
 
-It is designed for scanned PDFs where the same watermark image is inserted on every page (for example, class notes, books, or distributed materials).
+It is designed for PDFs where the same watermark image is inserted on every page (for example, class notes, books, or distributed materials).
 
 ---
 
