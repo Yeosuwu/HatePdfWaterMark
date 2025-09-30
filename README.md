@@ -56,4 +56,6 @@ It is designed for scanned PDFs where the same watermark image is inserted on ev
 - This script assumes the watermark image appears on both page 1 and page 2.  
 - If the watermark starts appearing only from later pages (e.g. page 3 onward), the script will not detect it correctly.  
   In that case, the code must be modified to compare different pages (for example, page 2 and page 3).
-- Works only with repeated image-based watermarks.  
+- Works only with repeated image-based watermarks.
+
+Save hours of manual editing. Remove PDF image watermarks in under 1 minute.
