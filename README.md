@@ -43,7 +43,7 @@ It is designed for PDFs where the same watermark image is inserted on every page
 - Works best when:
   - The watermark is **the same image** on all pages.
   - The watermark appears in **page 1 and page 2**.
-  - The Watermark and original images are separated.
+  - The watermark and original images are separated.
 - Does not work if:
   - The watermark is text, not an image.
   - Each page uses a slightly different watermark image.
