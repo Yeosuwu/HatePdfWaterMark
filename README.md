@@ -23,14 +23,12 @@ It’s optimized for documents where the same watermark (image or text) appears 
 ## Usage
 
 1. Install dependencies:
-``bash
-pip install pymupdf``
+``pip install pymupdf``
 
 3. Place your PDF files in the same folder as the script.
 
 4. Run the script:
-``bash
-python HatePdfWaterMark.py``
+``python HatePdfWaterMark.py``
 
 5. Cleaned PDFs will be saved in an `output` folder.
 
