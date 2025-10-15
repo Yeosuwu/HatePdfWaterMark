@@ -5,10 +5,11 @@ import random
 import logging
 from collections import Counter
 
+# Logging setup
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
-    filename="pdf_cleaner.log",
+    filename="Watermark_Results.log",
     filemode="w"
 )
 
@@ -16,9 +17,9 @@ def detect_watermark(doc, sample_ratio=0.1, threshold=0.7):
     total_pages = len(doc)
 
     if total_pages > 1000:
-        sample_ratio = 0.02  # 2%
+        sample_ratio = 0.02
     elif total_pages > 300:
-        sample_ratio = 0.05  # 5%
+        sample_ratio = 0.05
 
     sample_count = min(max(3, int(total_pages * sample_ratio)), 100)
     sampled_pages = sorted(random.sample(range(total_pages), sample_count))
@@ -26,8 +27,9 @@ def detect_watermark(doc, sample_ratio=0.1, threshold=0.7):
     image_sets = []
     text_counts = Counter()
 
-    for i in sampled_pages:
+    for idx, i in enumerate(sampled_pages, 1):
         try:
+            print(f"  → Sampling page {i+1}/{total_pages} ({idx}/{sample_count})", end="\r")
             page = doc[i]
             image_sets.append({img[0] for img in page.get_images(full=False)})
 
@@ -39,6 +41,7 @@ def detect_watermark(doc, sample_ratio=0.1, threshold=0.7):
             logging.warning(f"Skipped page {i} due to error: {e}")
             continue
 
+    print() 
     common_images = set.intersection(*image_sets) if image_sets else set()
     common_texts = [w for w, c in text_counts.items() if c / sample_count >= threshold]
 
@@ -58,7 +61,9 @@ def remove_image_watermark(doc, wm_xref):
         logging.error(f"Failed to gather watermark names: {e}")
         return removed_pages
 
-    for page in doc:
+    total_pages = len(doc)
+    for i, page in enumerate(doc, 1):
+        print(f"  → Removing image watermark... ({i}/{total_pages})", end="\r")
         try:
             for c in page.get_contents():
                 cont = doc.xref_stream(c)
@@ -70,9 +75,10 @@ def remove_image_watermark(doc, wm_xref):
                     doc.update_stream(c, new_cont)
                     removed_pages += 1
         except Exception as e:
-            logging.warning(f"Failed to process page: {e}")
+            logging.warning(f"Failed to process page {i}: {e}")
             continue
 
+    print()
     return removed_pages
 
 
@@ -82,7 +88,9 @@ def remove_text_watermark(doc, watermark_words):
         return 0
 
     pattern = re.compile("|".join(re.escape(w) for w in watermark_words))
-    for page in doc:
+    total_pages = len(doc)
+    for i, page in enumerate(doc, 1):
+        print(f"  → Removing text watermark... ({i}/{total_pages})", end="\r")
         try:
             blocks = page.get_text("blocks")
             text = " ".join(block[4] for block in blocks if len(block) > 4)
@@ -93,9 +101,10 @@ def remove_text_watermark(doc, watermark_words):
                 page.insert_textbox(rect, new_text)
                 removed_pages += 1
         except Exception as e:
-            logging.warning(f"Failed to clean text on page: {e}")
+            logging.warning(f"Failed to clean text on page {i}: {e}")
             continue
 
+    print()
     return removed_pages
 
 
@@ -104,33 +113,38 @@ def process_pdf(input_pdf, output_pdf):
     try:
         doc = fitz.open(input_pdf)
         logging.info(f"Opened {input_pdf}")
+        print(f"\nProcessing {input_pdf} ({len(doc)} pages)")
     except Exception as e:
         logging.error(f"Failed to open {input_pdf}: {e}")
+        print(f"[ERROR] Cannot open {input_pdf}")
         return
 
     try:
         wm_type, wm_data = detect_watermark(doc)
     except Exception as e:
         logging.error(f"Failed to detect watermark in {input_pdf}: {e}")
+        print(f"[ERROR] Detection failed for {input_pdf}")
         return
 
     try:
         if wm_type == "image":
-            logging.info(f"Image watermark detected (xref={wm_data})")
+            print("→ Detected image watermark")
             modified = remove_image_watermark(doc, wm_data)
         elif wm_type == "text":
-            logging.info(f"Text watermark detected: {wm_data[:5]}...")
+            print(f"→ Detected text watermark ({wm_data[:3]}...)")
             modified = remove_text_watermark(doc, wm_data)
         else:
-            logging.info(f"No watermark detected in {input_pdf} → skipped")
+            print("→ No watermark detected — skipped.")
             return
 
         os.makedirs(os.path.dirname(output_pdf), exist_ok=True)
         doc.save(output_pdf)
         logging.info(f"Saved modified PDF to {output_pdf} ({modified} pages modified)")
+        print(f"✅ Saved to {output_pdf} ({modified} pages modified)\n")
 
     except Exception as e:
         logging.error(f"Processing failed for {input_pdf}: {e}")
+        print(f"[ERROR] Processing failed: {e}")
 
     finally:
         if doc:
@@ -143,8 +157,12 @@ if __name__ == "__main__":
     output_folder = "output"
     os.makedirs(output_folder, exist_ok=True)
 
+    print("=== PDF Watermark Remover ===\n")
+
     for fname in os.listdir(input_folder):
         if fname.lower().endswith(".pdf"):
             inp = os.path.join(input_folder, fname)
             outp = os.path.join(output_folder, fname)
             process_pdf(inp, outp)
+
+    print("All PDFs processed.\n")
