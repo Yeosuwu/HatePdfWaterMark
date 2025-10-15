@@ -3,9 +3,7 @@ import os
 import re
 import random
 import logging
-import csv
 from collections import Counter
-from concurrent.futures import ProcessPoolExecutor, as_completed
 
 logging.basicConfig(
     level=logging.INFO,
@@ -13,9 +11,6 @@ logging.basicConfig(
     filename="pdf_cleaner.log",
     filemode="w"
 )
-
-results = [] 
-
 
 def detect_watermark(doc, sample_ratio=0.1, threshold=0.7):
     total_pages = len(doc)
@@ -117,8 +112,6 @@ def remove_text_watermark(doc, watermark_words):
 
 def process_pdf(input_pdf, output_pdf):
     doc = None
-    modified = 0
-    wm_type = None
     try:
         doc = fitz.open(input_pdf)
         logging.info(f"Opened {input_pdf}")
@@ -126,14 +119,14 @@ def process_pdf(input_pdf, output_pdf):
     except Exception as e:
         logging.error(f"Failed to open {input_pdf}: {e}")
         print(f"[ERROR] Cannot open {input_pdf}")
-        return (input_pdf, "error", 0)
+        return
 
     try:
         wm_type, wm_data = detect_watermark(doc)
     except Exception as e:
         logging.error(f"Failed to detect watermark in {input_pdf}: {e}")
         print(f"[ERROR] Detection failed for {input_pdf}")
-        return (input_pdf, "error", 0)
+        return
 
     try:
         if wm_type == "image":
@@ -144,19 +137,16 @@ def process_pdf(input_pdf, output_pdf):
             modified = remove_text_watermark(doc, wm_data)
         else:
             print("→ No watermark detected — skipped.")
-            return (input_pdf, "none", 0)
+            return
 
         os.makedirs(os.path.dirname(output_pdf), exist_ok=True)
         doc.save(output_pdf)
         logging.info(f"Saved modified PDF to {output_pdf} ({modified} pages modified)")
         print(f"✅ Saved to {output_pdf} ({modified} pages modified)\n")
 
-        return (input_pdf, wm_type or "none", modified)
-
     except Exception as e:
         logging.error(f"Processing failed for {input_pdf}: {e}")
         print(f"[ERROR] Processing failed: {e}")
-        return (input_pdf, "error", 0)
 
     finally:
         if doc:
@@ -169,26 +159,12 @@ if __name__ == "__main__":
     output_folder = "output"
     os.makedirs(output_folder, exist_ok=True)
 
-    print("=== PDF Watermark Remover (Parallel + CSV Log) ===\n")
+    print("=== PDF Watermark Remover ===\n")
 
-    pdf_files = [f for f in os.listdir(input_folder) if f.lower().endswith(".pdf")]
-
-    with ProcessPoolExecutor() as executor:
-        futures = []
-        for fname in pdf_files:
+    for fname in os.listdir(input_folder):
+        if fname.lower().endswith(".pdf"):
             inp = os.path.join(input_folder, fname)
             outp = os.path.join(output_folder, fname)
-            futures.append(executor.submit(process_pdf, inp, outp))
+            process_pdf(inp, outp)
 
-        for f in as_completed(futures):
-            result = f.result()
-            if result:
-                results.append(result)
-
-    with open("pdf_results.csv", "w", newline="", encoding="utf-8") as csvfile:
-        writer = csv.writer(csvfile)
-        writer.writerow(["filename", "watermark_type", "modified_pages"])
-        writer.writerows(results)
-
-    print("\nAll PDFs processed.")
-    print("Summary saved to pdf_results.csv\n")
+    print("All PDFs processed.\n")
