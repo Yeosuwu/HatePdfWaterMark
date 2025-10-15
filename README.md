@@ -1,62 +1,61 @@
 # PDF Watermark Remover
 
-This script removes repeated image watermarks from PDF files using [PyMuPDF (fitz)](https://pymupdf.readthedocs.io/).
+This script automatically detects and removes both **image** and **text** watermarks from PDF files using [PyMuPDF (fitz)](https://pymupdf.readthedocs.io/).
 
-It is designed for PDFs where the same watermark image is inserted on every page (for example, class notes, books, or distributed materials).
+It’s optimized for documents where the same watermark (image or text) appears repeatedly on many or all pages.
 
 ---
 
 ## How it works
 
-1. The script compares the images on **page 1 and page 2**.  
-   - Regular content images are different on each page.  
-   - The repeated image found on both pages is assumed to be the watermark.
+1. The script analyzes a **small random sample (≈ 10%)** of the pages.  
+   - It compares all image objects across those sampled pages to find any identical image → **image watermark**.  
+   - It also compares the text content across the same pages to find repeated words → **text watermark**.
 
-2. Once the watermark image is identified, the script scans the whole document.  
-   - It finds all references to the same image.  
-   - It removes those references from every page.
+2. Based on what it detects:  
+   - **Image watermark:** removes every reference to the detected image object across the entire file.  
+   - **Text watermark:** removes recurring text patterns that appear on most sampled pages.
 
-3. A cleaned PDF is saved without the watermark.
+3. The cleaned PDF is saved to an `output` folder with the same filename.
 
 ---
 
 ## Usage
 
-1. Install requirements:
-   ```bash
+1. Install dependencies:
    pip install pymupdf
-   ```
 
 2. Place your PDF files in the same folder as the script.
 
 3. Run the script:
-   ```bash
    python HatePdfWaterMark.py
-   ```
 
-4. Cleaned PDFs will be saved in an `output` folder with the same filename.
+4. Cleaned PDFs will be saved in an `output` folder.
 
 ---
 
-## When it works
+## When it works best
 
-- Works best when:
-  - The watermark is **the same image** on all pages.
-  - The watermark appears in **page 1 and page 2**.
-  - The watermark and original images are separated.
-- Does not work if:
-  - The watermark is text, not an image.
-  - Each page uses a slightly different watermark image.
+✅ Works best when:
+- The watermark (image or text) is **identical** on most or all pages.  
+- The watermark appears consistently from the beginning or throughout the document.  
+- The watermark is embedded as a separate image object or text layer.
+
+⚠️ May not work if:
+- Each page has a slightly different watermark.  
+- The watermark is part of the background image or scanned text.  
+- The watermark appears only on a few pages with unique positioning.
 
 ---
 
 ## Notes
 
-- The script is optimized for repeated image watermarks only.  
-- For text-based watermarks, you need a different approach.  
-- This script assumes the watermark image appears on both page 1 and page 2.  
-- If the watermark starts appearing only from later pages (e.g. page 3 onward), the script will not detect it correctly.  
-  In that case, the code must be modified to compare different pages (for example, page 2 and page 3).
-- Works only with repeated image-based watermarks.
+- The script automatically detects whether the watermark is image-based or text-based — no manual configuration needed.  
+- Sampling only about 10% of pages makes it **fast**, even for large PDFs.  
+- The detection threshold and sample ratio can be adjusted inside the code (`sample_ratio`, `threshold`).  
+- Outputs are saved in the `output` directory with the same filenames.
 
-Save hours of manual editing. Remove PDF image watermarks in under 1 minute.
+---
+
+Save hours of manual cleanup.  
+Remove image **and** text watermarks from PDFs in seconds.
