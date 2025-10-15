@@ -8,7 +8,7 @@ from collections import Counter
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
-    filename="Watermark_Results.log",
+    filename="watermark_cleaning.log",
     filemode="w"
 )
 
@@ -28,7 +28,8 @@ def detect_watermark(doc, sample_ratio=0.1, threshold=0.7):
 
     for idx, i in enumerate(sampled_pages, 1):
         try:
-            print(f"  → Sampling page {i+1}/{total_pages} ({idx}/{sample_count})", end="\r")
+            progress = (idx / sample_count) * 100
+            print(f"  → Sampling page {i+1}/{total_pages} ({progress:.1f}%)", end="\r")
             page = doc[i]
             image_sets.append({img[0] for img in page.get_images(full=False)})
 
@@ -62,7 +63,8 @@ def remove_image_watermark(doc, wm_xref):
 
     total_pages = len(doc)
     for i, page in enumerate(doc, 1):
-        print(f"  → Removing image watermark... ({i}/{total_pages})", end="\r")
+        progress = (i / total_pages) * 100
+        print(f"  → Removing image watermark... ({progress:.1f}%)", end="\r")
         try:
             for c in page.get_contents():
                 cont = doc.xref_stream(c)
@@ -89,7 +91,8 @@ def remove_text_watermark(doc, watermark_words):
     pattern = re.compile("|".join(re.escape(w) for w in watermark_words))
     total_pages = len(doc)
     for i, page in enumerate(doc, 1):
-        print(f"  → Removing text watermark... ({i}/{total_pages})", end="\r")
+        progress = (i / total_pages) * 100
+        print(f"  → Removing text watermark... ({progress:.1f}%)", end="\r")
         try:
             blocks = page.get_text("blocks")
             text = " ".join(block[4] for block in blocks if len(block) > 4)
