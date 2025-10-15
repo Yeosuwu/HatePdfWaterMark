@@ -2,7 +2,15 @@ import fitz
 import os
 import re
 import random
+import logging
 from collections import Counter
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    filename="pdf_cleaner.log",
+    filemode="w"
+)
 
 def detect_watermark(doc, sample_ratio=0.1, threshold=0.7):
     total_pages = len(doc)
@@ -28,7 +36,7 @@ def detect_watermark(doc, sample_ratio=0.1, threshold=0.7):
             words = re.findall(r'\b\w+\b', text)
             text_counts.update(set(words))
         except Exception as e:
-            print(f"[WARN] Skipped page {i} due to error: {e}")
+            logging.warning(f"Skipped page {i} due to error: {e}")
             continue
 
     common_images = set.intersection(*image_sets) if image_sets else set()
@@ -47,7 +55,7 @@ def remove_image_watermark(doc, wm_xref):
     try:
         wm_names = {img[7] for page in doc for img in page.get_images(full=True) if img[0] == wm_xref}
     except Exception as e:
-        print(f"[ERROR] Failed to gather watermark names: {e}")
+        logging.error(f"Failed to gather watermark names: {e}")
         return removed_pages
 
     for page in doc:
@@ -62,7 +70,7 @@ def remove_image_watermark(doc, wm_xref):
                     doc.update_stream(c, new_cont)
                     removed_pages += 1
         except Exception as e:
-            print(f"[WARN] Failed to process page: {e}")
+            logging.warning(f"Failed to process page: {e}")
             continue
 
     return removed_pages
@@ -85,7 +93,7 @@ def remove_text_watermark(doc, watermark_words):
                 page.insert_textbox(rect, new_text)
                 removed_pages += 1
         except Exception as e:
-            print(f"[WARN] Failed to clean text on page: {e}")
+            logging.warning(f"Failed to clean text on page: {e}")
             continue
 
     return removed_pages
@@ -95,37 +103,39 @@ def process_pdf(input_pdf, output_pdf):
     doc = None
     try:
         doc = fitz.open(input_pdf)
+        logging.info(f"Opened {input_pdf}")
     except Exception as e:
-        print(f"[ERROR] Failed to open {input_pdf}: {e}")
+        logging.error(f"Failed to open {input_pdf}: {e}")
         return
 
     try:
         wm_type, wm_data = detect_watermark(doc)
     except Exception as e:
-        print(f"[ERROR] Failed to detect watermark in {input_pdf}: {e}")
+        logging.error(f"Failed to detect watermark in {input_pdf}: {e}")
         return
 
     try:
         if wm_type == "image":
-            print(f"[{input_pdf}] Image watermark detected (xref={wm_data})")
+            logging.info(f"Image watermark detected (xref={wm_data})")
             modified = remove_image_watermark(doc, wm_data)
         elif wm_type == "text":
-            print(f"[{input_pdf}] Text watermark detected: {wm_data[:5]}...")
+            logging.info(f"Text watermark detected: {wm_data[:5]}...")
             modified = remove_text_watermark(doc, wm_data)
         else:
-            print(f"[{input_pdf}] No watermark detected → skipped")
+            logging.info(f"No watermark detected in {input_pdf} → skipped")
             return
 
         os.makedirs(os.path.dirname(output_pdf), exist_ok=True)
         doc.save(output_pdf)
-        print(f" → {output_pdf} ({modified} pages modified)")
+        logging.info(f"Saved modified PDF to {output_pdf} ({modified} pages modified)")
 
     except Exception as e:
-        print(f"[ERROR] Processing failed for {input_pdf}: {e}")
+        logging.error(f"Processing failed for {input_pdf}: {e}")
 
     finally:
         if doc:
             doc.close()
+            logging.info(f"Closed {input_pdf}")
 
 
 if __name__ == "__main__":
