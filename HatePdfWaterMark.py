@@ -8,7 +8,7 @@ from collections import Counter
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
-    filename="watermark_cleaning.log",
+    filename="pdf_cleaner.log",
     filemode="w"
 )
 
@@ -41,7 +41,7 @@ def detect_watermark(doc, sample_ratio=0.1, threshold=0.7):
             logging.warning(f"Skipped page {i} due to error: {e}")
             continue
 
-    print() 
+    print()
     common_images = set.intersection(*image_sets) if image_sets else set()
     common_texts = [w for w, c in text_counts.items() if c / sample_count >= threshold]
 
